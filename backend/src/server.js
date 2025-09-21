@@ -11,37 +11,45 @@ import chatRoutes from "./routes/chat.route.js";
 import { connectDB } from "./lib/db.js";
 
 const app = express();
-const PORT = process.env.PORT;
 
+// Vercel veya local için port
+const PORT = process.env.PORT || 3000;
+
+// __dirname Vercel uyumu için
 const __dirname = path.resolve();
 
+// CORS ayarı
 app.use(
   cors({
-    origin: "http://localhost:5173",
-    credentials: true, // allow frontend to send cookies
+    origin: process.env.NODE_ENV === "production" ? "*" : "http://localhost:5173",
+    credentials: true, // frontend cookie gönderebilir
   })
 );
 
 app.use(express.json());
 app.use(cookieParser());
 
+// API rotaları
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/chat", chatRoutes);
 
+// Production'da frontend'i serve et
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(path.join(__dirname, "../frontend/dist")));
+  const frontendPath = path.join(__dirname, "../frontend/dist");
+  app.use(express.static(frontendPath));
 
   app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname, "../frontend", "dist", "index.html"));
+    res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
 
 // Test route
-app.get("/", (req, res) => {
+app.get("/server-test", (req, res) => {
   res.send("Server is running...");
 });
 
+// Server başlat
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   connectDB();
